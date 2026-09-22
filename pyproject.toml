@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "codex-switch-local"
+version = "0.1.0"
+description = "Local Codex connection switching without replacing your workspace state"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+dependencies = ["tomlkit>=0.13,<1", "cryptography>=41", "psutil>=5.9"]
+
+[project.scripts]
+codex-switch = "codex_switch.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["codex_switch*"]
