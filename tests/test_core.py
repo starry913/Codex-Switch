@@ -113,7 +113,10 @@ class CoreTests(unittest.TestCase):
         failed = False
         def write(path, data):
             nonlocal failed
-            if path == self.home / "auth.json" and not failed:
+            # Windows runners may normalize temporary paths differently from
+            # the Path instance created in setUp. The fault belongs to the
+            # managed file itself, so identify it by name across platforms.
+            if Path(path).name == "auth.json" and not failed:
                 failed = True
                 raise OSError("simulated failure")
             return atomic_write(path, data)
