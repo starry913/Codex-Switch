@@ -5,7 +5,7 @@
 ![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)
 ![Windows](https://img.shields.io/badge/Windows-10%20%2F%2011-0078D4?logo=windows)
 ![WSL2](https://img.shields.io/badge/WSL2-supported-4EAA25?logo=linux&logoColor=white)
-![License](https://img.shields.io/badge/license-MIT-blue)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 <p align="center">
   <img src="docs/images/main-window.png" alt="Codex Switch 主界面" width="620">
@@ -78,8 +78,16 @@ powershell -ExecutionPolicy Bypass -File .\setup.ps1
 
 第一次使用某个服务时，需要先按照服务商的 Codex 文档完成一次配置并确认可以正常对话。Codex Switch 不附带任何 API Key，凭据只保存在你的本机，不会上传到仓库。
 
-## 许可证与声明
+## 开源许可证
 
-[MIT License](LICENSE)
+Codex Switch 使用 [MIT License](LICENSE) 开源。
+
+选择 MIT License，是因为 Codex Switch 是一个面向开发者的小型工具：任何人都可以使用、学习、修改和分发代码，也可以加入新的服务商支持或集成到自己的工具中。使用或分发本项目时，需要保留原版权声明和许可证文本。
+
+MIT License 允许个人使用和商业使用，也允许发布修改后的版本；软件按“原样”提供，作者不对使用过程中产生的故障或损失提供担保。完整条款请查看仓库根目录的 [`LICENSE`](LICENSE) 文件。
+
+Copyright © 2026 [Qiyang Li](https://github.com/starry913)
+
+## 声明
 
 本项目不是 OpenAI、Packy 或 RightCode 的官方产品，与这些服务商不存在隶属或背书关系。服务地址、模型名称和兼容性可能随服务商调整，请以各自最新文档为准。
