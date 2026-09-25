@@ -525,7 +525,12 @@ class Manager:
                     continue
                 try:
                     if os.name == "nt":
-                        subprocess.run(["taskkill", "/PID", str(int(pid)), "/T", "/F"], capture_output=True, timeout=8, check=False)
+                        startupinfo = subprocess.STARTUPINFO()
+                        startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+                        startupinfo.wShowWindow = subprocess.SW_HIDE
+                        subprocess.run(["taskkill", "/PID", str(int(pid)), "/T", "/F"], capture_output=True,
+                                       timeout=8, check=False, startupinfo=startupinfo,
+                                       creationflags=subprocess.CREATE_NO_WINDOW)
                     else:
                         os.kill(int(pid), 15)
                 except (OSError, subprocess.TimeoutExpired, ValueError, TypeError):

@@ -4,10 +4,12 @@ __pycache__/
 *.egg-info/
 .venv*/
 .test-temp/
+.test-runtime*/
 .inspection/
 .demo/
 build/
 dist/
+*.spec
 *.vault
 *.lock
 tmp_bundle.js

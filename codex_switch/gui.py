@@ -1,6 +1,7 @@
 """Small personal UI: environment + connection + one switch button."""
 from __future__ import annotations
-import os, queue, threading, tkinter as tk, subprocess
+import os, queue, threading, tkinter as tk, subprocess, sys
+from pathlib import Path
 from tkinter import ttk, messagebox
 from .bridge import Bridge, distributions
 from .core import SwitchError
@@ -13,6 +14,10 @@ class App:
         self.build(); self.root.after(80,self.poll); self.run(lambda:(distributions(),self.bridge.call("diagnostic")),self.loaded)
     def build(self):
         self.root.title("Codex Switch"); self.root.geometry("520x390"); self.root.minsize(480,360); self.root.configure(bg="#F1F4F9")
+        icon_root=Path(getattr(sys,"_MEIPASS",Path(__file__).resolve().parent.parent)); icon=icon_root/"assets"/"codex-switch.ico"
+        if icon.is_file():
+            try:self.root.iconbitmap(default=str(icon))
+            except tk.TclError:pass
         style=ttk.Style(); style.theme_use("clam"); style.configure("TFrame",background="#F1F4F9"); style.configure("TLabel",background="#F1F4F9",foreground="#202B43",font=("Microsoft YaHei UI",11)); style.configure("Title.TLabel",font=("Microsoft YaHei UI",23,"bold")); style.configure("TCombobox",padding=8,font=("Microsoft YaHei UI",12)); style.configure("Switch.TButton",background="#3559C7",foreground="white",padding=14,font=("Microsoft YaHei UI",13,"bold")); style.map("Switch.TButton",background=[("active","#2847AB"),("disabled","#9BA9D0")])
         f=ttk.Frame(self.root,padding=34); f.pack(fill="both",expand=True); ttk.Label(f,text="↔  CODEX SWITCH",foreground="#3559C7",font=("Segoe UI",14,"bold")).pack(anchor="w"); ttk.Label(f,text="切一下，继续工作",style="Title.TLabel").pack(anchor="w",pady=(20,5)); ttk.Label(f,text="选择环境和服务，点一次就行。",foreground="#65738B").pack(anchor="w",pady=(0,26))
         ttk.Label(f,text="运行环境").pack(anchor="w",pady=(0,6)); self.env_box=ttk.Combobox(f,textvariable=self.environment,state="readonly"); self.env_box.pack(fill="x",ipady=2); self.env_box.bind("<<ComboboxSelected>>",self.change_environment)
@@ -51,7 +56,9 @@ class App:
         if os.name!="nt":return
         # Reopen the packaged desktop app. Launching ChatGPT.exe under WindowsApps is denied.
         app_id=app_id or "OpenAI.Codex_2p2nqsd0c76g0!App"
-        try:subprocess.Popen(["explorer.exe","shell:AppsFolder\\"+app_id])
+        try:
+            startupinfo=subprocess.STARTUPINFO(); startupinfo.dwFlags|=subprocess.STARTF_USESHOWWINDOW; startupinfo.wShowWindow=subprocess.SW_HIDE
+            subprocess.Popen(["explorer.exe","shell:AppsFolder\\"+app_id],startupinfo=startupinfo,creationflags=subprocess.CREATE_NO_WINDOW)
         except OSError:pass
     def done(self,result,launch=False):
         if launch:self.launch_desktop(result.get("app_id"))

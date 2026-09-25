@@ -56,6 +56,15 @@ powershell -ExecutionPolicy Bypass -File .\setup.ps1
 
 安装完成后，双击 `start.cmd` 即可启动。
 
+如果想在 Windows 桌面直接启动软件，可以再运行：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\build-windows.ps1
+powershell -ExecutionPolicy Bypass -File .\install-desktop-shortcut.ps1
+```
+
+这会生成 `dist\Codex Switch.exe`，安装到当前用户的本地应用目录，并创建桌面快捷方式。Windows 端运行时不需要再手动启动 Python；要切换 WSL2 环境，仍需保留项目目录，并在对应发行版中运行一次 `setup-wsl.sh`。
+
 ### 1. 选择运行环境
 
 选择 `Windows`，或者选择工具检测到的 WSL2 发行版。

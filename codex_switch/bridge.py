@@ -7,36 +7,72 @@ from pathlib import Path
 import subprocess
 import sys
 
+if os.name == "nt":
+    import winreg
+
 from .core import SwitchError
 
 
 def run(command, **kwargs):
     if os.name == "nt":
-        kwargs["creationflags"] = subprocess.CREATE_NO_WINDOW
+        startupinfo = subprocess.STARTUPINFO()
+        startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+        startupinfo.wShowWindow = subprocess.SW_HIDE
+        kwargs.setdefault("startupinfo", startupinfo)
+        kwargs["creationflags"] = kwargs.get("creationflags", 0) | subprocess.CREATE_NO_WINDOW
     return subprocess.run(command, **kwargs)
 
 
 def distributions():
     if os.name != "nt":
         return []
+    names = []
+    try:
+        path = r"Software\Microsoft\Windows\CurrentVersion\Lxss"
+        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, path) as root:
+            for index in range(winreg.QueryInfoKey(root)[0]):
+                with winreg.OpenKey(root, winreg.EnumKey(root, index)) as distro:
+                    name = str(winreg.QueryValueEx(distro, "DistributionName")[0]).strip()
+                    if name and not name.lower().startswith("docker-desktop"):
+                        names.append(name)
+    except OSError:
+        pass
+    if names:
+        return sorted(set(names), key=str.casefold)
     try:
         p = run(["wsl.exe", "--list", "--quiet"], capture_output=True, timeout=10)
-        if p.returncode:
-            return []
-        names = p.stdout.decode("utf-16-le" if b"\x00" in p.stdout else "utf-8", errors="replace")
-        return [n.strip() for n in names.splitlines() if n.strip() and not n.strip().startswith("docker-desktop")]
+        if not p.returncode:
+            output = p.stdout.decode("utf-16-le" if b"\x00" in p.stdout else "utf-8", errors="replace")
+            return [name.strip() for name in output.splitlines()
+                    if name.strip() and not name.strip().lower().startswith("docker-desktop")]
     except (OSError, subprocess.TimeoutExpired):
-        return []
+        pass
+    return []
 
 
 class Bridge:
     def __init__(self, distro=None, home=None, store=None):
         self.distro, self.home, self.store = distro, home, store
-        self.root = Path(__file__).resolve().parent.parent
+        self.frozen = bool(getattr(sys, "frozen", False))
+        self.root = self._source_root()
+
+    def _source_root(self):
+        """Find the source tree used by the WSL helper after Windows packaging."""
+        candidates = [Path.cwd(), Path(__file__).resolve().parent.parent]
+        if self.frozen:
+            executable = Path(sys.executable).resolve()
+            candidates.extend([executable.parent, *executable.parents])
+        for candidate in candidates:
+            if (candidate / "codex_switch" / "__main__.py").is_file():
+                return candidate
+        return Path(__file__).resolve().parent.parent
 
     def call(self, action, **args):
-        request = json.dumps({"action": action, "home": self.home, "store": self.store, "args": args}, ensure_ascii=False)
+        payload = {"action": action, "home": self.home, "store": self.store, "args": args}
         if self.distro:
+            request = json.dumps(payload, ensure_ascii=False)
+            if not (self.root / "codex_switch" / "__main__.py").is_file():
+                raise SwitchError("软件可以切换 Windows；若要使用 WSL2，请保留 Codex Switch 项目目录。")
             # `wsl -- command` waits on this machine and never returns. `-e` executes directly.
             mapped = run(["wsl.exe", "-d", self.distro, "-e", "wslpath", "-u", str(self.root)], capture_output=True, timeout=15)
             if mapped.returncode:
@@ -46,7 +82,13 @@ class Bridge:
             command = ["wsl.exe", "-d", self.distro, "-e", "sh", "-c",
                        'cd "$1" || exit 1; if [ -x .venv-wsl/bin/python ]; then exec .venv-wsl/bin/python -m codex_switch --rpc; else exec python3 -m codex_switch --rpc; fi',
                        "codex-switch", root]
+        elif self.frozen:
+            # A windowed PyInstaller executable has no console streams. Run the
+            # Windows backend in this worker thread instead of spawning the EXE.
+            from .cli import dispatch
+            return dispatch(payload)
         else:
+            request = json.dumps(payload, ensure_ascii=False)
             python = Path(sys.executable)
             if python.name.lower() == "pythonw.exe":
                 python = python.with_name("python.exe")
